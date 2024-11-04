@@ -1,23 +1,22 @@
-import os
 import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import requests
+import json
 
-# Use an environment variable to store the path to your credentials file
-credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-# DingTalk webhook URL
-webhook_url = "https://oapi.dingtalk.com/robot/send?access_token=c1574fa7eb406578ec66a6aaf8a33c7328cc5b77a68660e63ac4b6d1db7c02df"
-
-# Ensure the environment variable is set, or provide a fallback
-if credentials_path is None:
-    st.error("Google credentials not found. Please set the GOOGLE_APPLICATION_CREDENTIALS environment variable.")
+# Load Google credentials from Streamlit secrets
+if "google_credentials" not in st.secrets:
+    st.error("Google credentials not found in secrets.")
 else:
     try:
+        # Create credentials from st.secrets
+        creds_dict = st.secrets["google_credentials"]
+        with open("google_credentials.json", "w") as f:
+            json.dump(creds_dict, f)
+
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
         client = gspread.authorize(creds)
         sheet = client.open("asset_control").sheet1
     except Exception as e:
@@ -45,7 +44,7 @@ else:
                     st.error(f"Failed to log data: {e}")
 
                 # Call the Google WebApp for further processing
-                google_webapp_url = "https://script.google.com/macros/s/AKfycbzIQ2nXATn20JM1rkOmZnQ5ohsDOYd2vRfMrmIdT75jC_p4Yc2ZDxpu8oNyfNS90--y/exec"
+                google_webapp_url = st.secrets["google"]["webapp_url"]
                 try:
                     response = requests.get(google_webapp_url, verify=False)
                     if response.status_code == 200:
@@ -78,7 +77,7 @@ else:
                                     "text": markdown_message
                                 }
                             }
-                            response = requests.post(webhook_url, json=data, headers=headers)
+                            response = requests.post(st.secrets["dingtalk"]["webhook_url"], json=data, headers=headers)
 
                             if response.status_code == 200:
                                 st.success("DingTalk alert sent successfully!")
