@@ -5,13 +5,13 @@ from datetime import datetime
 import requests
 import json
 
-# Load Google credentials from Streamlit secrets
+# Load Google credentials from Streamlit secrets and convert to a dictionary
 if "google_credentials" not in st.secrets:
     st.error("Google credentials not found in secrets.")
 else:
     try:
-        # Create credentials from st.secrets
-        creds_dict = st.secrets["google_credentials"]
+        # Convert st.secrets to a standard dictionary
+        creds_dict = dict(st.secrets["google_credentials"])
         with open("google_credentials.json", "w") as f:
             json.dump(creds_dict, f)
 
